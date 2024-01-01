@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import {DB_NAME} from '../constatns.js'
 
 
-
 const connetDb = async() =>{
 
     try{

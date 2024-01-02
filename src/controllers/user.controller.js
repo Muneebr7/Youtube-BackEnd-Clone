@@ -1,9 +1,9 @@
 import {asyncHandler} from '../utils/asyncHandler.js'
 
 const regiserUser = asyncHandler( async (req,res)=>{
-    res.status(200).send({
-        message: "success",
-    })
+
+    const {fullName , email, username , password} =  req.body
+    console.log("email :" , email)
 })
 
 

@@ -59,12 +59,20 @@ const registerUser = asyncHandler(async (req, res) => {
 }
 
     // Deleteing Local Images
-    fs.unlinkSync(avatarLocalPath)
-    fs.unlinkSync(coverLocalPath)
+  fs.unlinkSync(avatarLocalPath)
+  fs.unlinkSync(coverLocalPath)
 
   return res
     .status(201)
     .json(new ApiResponse(200 , createdUser , "User Created Successfully"));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req,res)=>{
+
+  
+
+})
+
+
+
+export { registerUser, loginUser };

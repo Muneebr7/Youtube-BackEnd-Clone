@@ -23,7 +23,7 @@ router.route("/register").post(
   registerUser
 );
 
-Router.route("/login").post(loginUser);
-Router.route("/logout").post(verifyJwt(), logOutUser);
+router.route("/login").post(loginUser);
+router.route("/logout").post(verifyJwt, logOutUser);
 
 export default router;

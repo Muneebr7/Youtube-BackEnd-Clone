@@ -3,7 +3,23 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import fs from 'fs'
+import fs from "fs";
+
+const generateAccessAndRefreshToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+    user.refreshToken = refreshToken
+    user.save({validateBeforeSave : false})
+
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something Went Wrong While Generating Referesh Token and Access token"
+    );
+  }
+};
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
@@ -12,7 +28,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (
     [fullName, email, username, password].some((field) => field?.trim() === "")
   ) {
-     throw new ApiError(400, "All Fields are required");
+    throw new ApiError(400, "All Fields are required");
   }
 
   // Checking Existing User
@@ -28,7 +44,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const coverLocalPath = req.files?.coverImage[0]?.path;
 
   if (!avatarLocalPath) {
-   throw new ApiError(400, "Avatar not found");
+    throw new ApiError(400, "Avatar not found");
   }
   if (!coverLocalPath) {
     throw new ApiError(400, "Cover Image not found");
@@ -37,10 +53,9 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatar = await uploadToCloudinary(avatarLocalPath);
   const coverImage = await uploadToCloudinary(coverLocalPath);
 
-
   if (!avatar) {
-   throw new ApiError(400, "Cover Image not found");
-}
+    throw new ApiError(400, "Cover Image not found");
+  }
 
   const user = await User.create({
     fullName,
@@ -56,42 +71,37 @@ const registerUser = asyncHandler(async (req, res) => {
   );
   if (!createdUser) {
     throw new ApiError(400, "Unable to Register");
-}
+  }
 
-    // Deleteing Local Images
-  fs.unlinkSync(avatarLocalPath)
-  fs.unlinkSync(coverLocalPath)
+  // Deleteing Local Images
+  fs.unlinkSync(avatarLocalPath);
+  fs.unlinkSync(coverLocalPath);
 
   return res
     .status(201)
-    .json(new ApiResponse(200 , createdUser , "User Created Successfully"));
+    .json(new ApiResponse(200, createdUser, "User Created Successfully"));
 });
 
-const loginUser = asyncHandler(async (req,res)=>{
-    const {email, username , password} = req.body
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, username, password } = req.body;
 
-    if(!username || email){
-      throw new ApiError(400, "Username or Email is Required")
-    }
+  if (!username || email) {
+    throw new ApiError(400, "Username or Email is Required");
+  }
 
-    const userDetails = await User.findOne({
-      $or : [{email} , {username}]
-    })
+  const userDetails = await User.findOne({
+    $or: [{ email }, { username }],
+  });
 
-    if(!userDetails){
-      throw new ApiError(404, "User Not Found")
-    }
+  if (!userDetails) {
+    throw new ApiError(404, "User Not Found");
+  }
 
-    const isPasswordValid = await userDetails.isPasswordCorrect(password)
+  const isPasswordValid = await userDetails.isPasswordCorrect(password);
 
-    if(!isPasswordValid){
-      throw new ApiError(401, "Password is not Valid")
-    }
-
-    
-
-})
-
-
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Password is not Valid");
+  }
+});
 
 export { registerUser, loginUser };

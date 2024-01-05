@@ -11,7 +11,7 @@ const generateAccessAndRefreshToken = async (userId) => {
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken
-    user.save({validateBeforeSave : false})
+    await user.save({validateBeforeSave : false})
 
   } catch (error) {
     throw new ApiError(

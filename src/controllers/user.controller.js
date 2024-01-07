@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -93,7 +94,6 @@ const loginUser = asyncHandler(async (req, res) => {
     $or: [{ email }, { username }],
   });
 
-
   if (!userDetails) {
     throw new ApiError(404, "User Not Found");
   }
@@ -155,7 +155,55 @@ const logOutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User Logout.."))
+    .json(new ApiResponse(200, {}, "User Logout.."));
 });
 
-export { registerUser, loginUser, logOutUser };
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "unAuthorized Request");
+  }
+
+  try {
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) {
+      throw new ApiError(400, "Invalid Refresh Token");
+    }
+
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw new ApiError(401, "Refresh Token is not matched");
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, newrefreshToken: refreshToken },
+          "Session Refresh"
+        )
+      );
+  } catch (error) {
+      throw new ApiError(400, "Something Went Wrong with RefreshToken")
+  }
+});
+export { registerUser, loginUser, logOutUser, refreshAccessToken };

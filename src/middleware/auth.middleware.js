@@ -24,7 +24,7 @@ export const verifyJwt = asyncHandler(async (req, res, next) => {
     req.user = currentUser
     next()
   } catch (error) {
-    console.log("auth middleware eror")
+    throw new ApiError(400, error.message)
   }
 
 });

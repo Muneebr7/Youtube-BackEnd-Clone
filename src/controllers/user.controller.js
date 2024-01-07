@@ -93,6 +93,7 @@ const loginUser = asyncHandler(async (req, res) => {
     $or: [{ email }, { username }],
   });
 
+
   if (!userDetails) {
     throw new ApiError(404, "User Not Found");
   }
@@ -106,9 +107,12 @@ const loginUser = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     userDetails._id
   );
-  const loggedInUser = User.findById(userDetails._id).select(
+
+  const loggedInUser = await User.findById(userDetails._id).select(
     "-password -refreshToken"
   );
+
+    console.log(loggedInUser)
 
   const options = {
     httpOnly: true,

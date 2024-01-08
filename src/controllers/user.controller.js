@@ -311,117 +311,116 @@ const getChannelProfile = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Cant Find Username");
   }
 
- const channel =  await User.aggregate([
+  const channel = await User.aggregate([
     {
-      $match : {
-        username : username
-      }
+      $match: {
+        username: username,
+      },
     },
     {
-        $lookup : {
-          from : "subscriptions",
-          localField : "_id",
-          foreignField : "subscriber",
-          as : "subscribers"
-        }
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribers",
+      },
     },
     {
-      $lookup : {
-        from : "subscriptions",
-        localField : "_id",
-        foreignField : "channel",
-        as : "subscribedTo"
-      }
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribedTo",
+      },
     },
     {
-      $addFields : {
-        subscribersCount : {
-          $size : "$subscribers"
+      $addFields: {
+        subscribersCount: {
+          $size: "$subscribers",
         },
-        subscribeTo : {
-          $size : "$subscribedTo"
+        subscribeTo: {
+          $size: "$subscribedTo",
         },
-        isSubscribed : {
-          $cond : {
-            if : {$in : [req.user?._id , "$subscribers.subscriber"]},
-            then : true,
-            else : false
-          }
-        }
-      }
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
     },
     {
-      $project : {
-        fullName : 1,
-        subscribersCount : 1,
-        subscribeTo : 1,
-        isSubscribed : 1,
-        avatar : 1,
-        coverImage : 1,
-        email : 1,
-      }
-    }
+      $project: {
+        fullName: 1,
+        subscribersCount: 1,
+        subscribeTo: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
   ]);
 
-  if(!channel.length){
-    throw new ApiError(404, "Channel not found")
+  if (!channel.length) {
+    throw new ApiError(404, "Channel not found");
   }
 
-  return res.status(200).json(
-    new ApiResponse(200, channel[0] , "User Channel Fetched Successfully")
-  )
-})
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "User Channel Fetched Successfully")
+    );
+});
 
-
-const getWatchHistory = asyncHandler( async (req,res) => {
+const getWatchHistory = asyncHandler(async (req, res) => {
   const user = User.aggregate([
     {
-      $match : {
-        _id : new mongoose.Types.ObjectId(req.user._id)
-      }
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
     },
     {
-      $lookup :{
-        from : "videos",
-        localField : "watchHistory",
-        foreignField : "_id",
-        as : "watchHistory",
-        pipeline : [
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
           {
-            $lookup : {
-              from : "users",
-              localField : "owner",
-              foreignField : "_id",
-              as : "owner",
-              pipeline : [
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
                 {
-                  $project : {
-                    fullName : 1,
-                    username : 1,
-                    avatar : 1,
-
-                  }
-                }
-              ]
-            }
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
           },
           {
-            $addFields : {
-              owner : {
-                $first : "$owner"
-              }
-            }
-          }
-        ]
-      }
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
     },
+  ]);
 
-
-
-
-  ])
-})
-
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user[0].watchHistory, "Watch History Fetched"));
+});
 
 export {
   registerUser,
@@ -434,4 +433,5 @@ export {
   changeAvatar,
   changeCover,
   getChannelProfile,
+  getWatchHistory,
 };

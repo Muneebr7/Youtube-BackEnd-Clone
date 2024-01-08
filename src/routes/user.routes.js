@@ -40,6 +40,6 @@ router.route("/change-password").patch(verifyJwt, changePass);
 router.route("/avatar").patch(verifyJwt , upload.single("avatar") , changeAvatar)
 router.route("/coverImage").patch(verifyJwt , upload.single("coverImage") , changeCover)
 router.route("/channel/:username").get(verifyJwt,getChannelProfile)
-router.route("watch-history").get(verifyJwt , getWatchHistory)
+router.route("/watch-history").get(verifyJwt , getWatchHistory)
 
 export default router;

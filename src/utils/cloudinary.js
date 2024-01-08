@@ -17,11 +17,12 @@ const uploadToCloudinary = async (filePath) => {
     if (!filePath) return null;
     const response = await cloudinary.uploader.upload(filePath, {
       resource_type: "auto",
+      media_metadata: true,
     });
     return response;
   } catch (error) {
     fs.unlinkSync(filePath); //remove local file if error
-    return null;
+    return error
   }
 };
 

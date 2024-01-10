@@ -4,7 +4,7 @@ import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
-import path from "path";
+import { upload } from "../middleware/multer.middleware.js";
 import fs from "fs";
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -19,31 +19,30 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   const videoLocalPath = req.files.video[0].path;
-  const thumbnailLocalPath = req.files?.thumbnail[0].path
+  const thumbnailLocalPath = req.files?.thumbnail[0].path;
 
   if (!videoLocalPath) {
     throw new ApiError(404, "unable to get video local path");
   }
 
-  if(!thumbnailLocalPath){
+  if (!thumbnailLocalPath) {
     throw new ApiError(404, "unable to get Thumbnail local path");
   }
 
   const publishedVideo = await uploadToCloudinary(videoLocalPath);
-  const videoThumbnail = await uploadToCloudinary(thumbnailLocalPath)
+  const videoThumbnail = await uploadToCloudinary(thumbnailLocalPath);
 
   if (!publishedVideo) {
     throw new ApiError(400, "Unable to Upload a Video File to Cloudinary");
   }
 
-  if(!videoThumbnail){
-    throw new ApiError(400, " Unable to upload video Thumbnail to Cloudinary")
+  if (!videoThumbnail) {
+    throw new ApiError(400, " Unable to upload video Thumbnail to Cloudinary");
   }
 
-
   const video = await Video.create({
-    videoFile:  publishedVideo.url,
-    thumbnail : videoThumbnail.url,
+    videoFile: publishedVideo.url,
+    thumbnail: videoThumbnail.url,
     title,
     description,
     duration: Math.floor(publishedVideo.duration),
@@ -60,51 +59,88 @@ const publishAVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video Uploaded Successfully"));
 });
 
-
 const getVideoById = asyncHandler(async (req, res) => {
-  const { videoId } = req.params
+  const { videoId } = req.params;
 
   const video = await Video.aggregate([
     {
-      $match : {
-        _id : new mongoose.Types.ObjectId(videoId)
-      }
+      $match: {
+        _id: new mongoose.Types.ObjectId(videoId),
+      },
     },
     {
-      $lookup : {
-        from : "users",
-        localField : "owner",
-        foreignField : "_id",
-        as : "owner",
-        pipeline : [
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
           {
-            $project : {
-              email : 1,
-              fullName : 1,
+            $project: {
+              email: 1,
+              fullName: 1,
               avatar: 1,
-              username : 1,
-            }
+              username: 1,
+            },
           },
-        
-        ]
-      }
+        ],
+      },
     },
     {
-      $addFields : {
-        owner : {
-          $first : "$owner"
-        }
-      }
-    }
+      $addFields: {
+        owner: {
+          $first: "$owner",
+        },
+      },
+    },
+  ]);
 
-  ])
-
-  if(!video){
-    throw new ApiError(404, "cant find Video")
+  if (!video) {
+    throw new ApiError(404, "cant find Video");
   }
 
-  return res.status(200).json(new ApiResponse(200, video[0], "Video Fetched Successfully"))
+  return res
+    .status(200)
+    .json(new ApiResponse(200, video[0], "Video Fetched Successfully"));
+});
 
-})
+const updateVideo = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  //TODO: update video details like title, description, thumbnail
 
-export { getAllVideos, publishAVideo, getVideoById };
+  const { title, description } = req.body;
+
+  if (!(title && description)) {
+    throw new ApiError(400, "All Fields are Required");
+  }
+
+  const thumbnailLocalPath = req.file?.path;
+
+  if (!thumbnailLocalPath) {
+    throw new ApiError(404, "Thumbnail Local Path is not found");
+  }
+
+  const thumbnail = await uploadToCloudinary(thumbnailLocalPath);
+
+  if (!thumbnail) {
+    throw new ApiError(400, "Error While Uploading to Cloudinary");
+  }
+
+  const video = await Video.findByIdAndUpdate(videoId, {
+    title,
+    description,
+    thumbnail: thumbnail.url
+  });
+
+  if (!video) {
+    throw new ApiError(400, "Unable to Update The Video Data");
+  }
+
+  fs.unlinkSync(thumbnailLocalPath);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, video, "Video Details Successfully Updated"));
+});
+
+export { getAllVideos, publishAVideo, getVideoById, updateVideo };

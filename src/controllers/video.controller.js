@@ -74,6 +74,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   fs.unlinkSync(videoLocalPath);
+  fs.unlinkSync(thumbnailLocalPath);
   return res
     .status(201)
     .json(new ApiResponse(200, video, "Video Uploaded Successfully"));

@@ -9,14 +9,10 @@ import fs from "fs";
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
 
-  if(!userId){
-    throw new ApiError(400, "unbale to fetch user id")
-  }
-
   const video = await Video.aggregatePaginate(
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(userId),
+        title: query,
       },
     }
  , {
@@ -26,7 +22,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
  }  );
 
   if(!video){
-    throw new ApiError(404, "Unable to Find video")
+    throw new ApiError(404, "Unable to Find videos")
   }
 
   return res.status(200).json(new ApiResponse(200, video, "Video Details"));

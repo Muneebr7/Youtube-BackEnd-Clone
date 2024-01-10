@@ -6,9 +6,30 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import fs from "fs";
 
-
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+
+  if(!userId){
+    throw new ApiError(400, "unbale to fetch user id")
+  }
+
+  const video = await Video.aggregatePaginate(
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(userId),
+      },
+    }
+ , {
+  page,
+  limit,
+  sort : {createdAt : parseInt(sortBy)}
+ }  );
+
+  if(!video){
+    throw new ApiError(404, "Unable to Find video")
+  }
+
+  return res.status(200).json(new ApiResponse(200, video, "Video Details"));
 });
 
 const publishAVideo = asyncHandler(async (req, res) => {
@@ -107,7 +128,12 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: update video details like title, description, thumbnail
-  const ownerId = req.user?._id
+  const ownerId = req.user?._id;
+
+
+  if(!ownerId){
+    throw new ApiError(400, "You Need To login First")
+  }
 
   const { title, description } = req.body;
 
@@ -127,22 +153,22 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error While Uploading to Cloudinary");
   }
 
-
-  const video = await Video.findOneAndUpdate({
-    _id : new mongoose.Types.ObjectId(videoId),
-    owner : new mongoose.Types.ObjectId(ownerId),
-  },
-  {
-    $set : {
-      title,
-      description,
-      thumbnail : thumbnail.url
+  const video = await Video.findOneAndUpdate(
+    {
+      _id: new mongoose.Types.ObjectId(videoId),
+      owner: new mongoose.Types.ObjectId(ownerId),
+    },
+    {
+      $set: {
+        title,
+        description,
+        thumbnail: thumbnail.url,
+      },
+    },
+    {
+      new: true,
     }
-  },
-  {
-    new : true
-  }
-  )
+  );
 
   if (!video) {
     throw new ApiError(400, "Unable to Update The Video Data");
@@ -156,26 +182,25 @@ const updateVideo = asyncHandler(async (req, res) => {
 });
 
 const deleteVideo = asyncHandler(async (req, res) => {
-  const { videoId } = req.params
-  const ownerId = req.user?._id
+  const { videoId } = req.params;
+  const ownerId = req.user?._id;
 
-  if(!ownerId){
-    throw new ApiError(400 , "Login to Delete")
+  if (!ownerId) {
+    throw new ApiError(400, "Login to Delete");
   }
 
-  const video = await Video.findOneAndDelete(
-    {
-        _id : new mongoose.Types.ObjectId(videoId),
-        owner : new mongoose.Types.ObjectId(ownerId)
-    }
-  )
+  const video = await Video.findOneAndDelete({
+    _id: new mongoose.Types.ObjectId(videoId),
+    owner: new mongoose.Types.ObjectId(ownerId),
+  });
 
-  if(!video){
-    throw new ApiError(400, "Unable to Delete Your video")
+  if (!video) {
+    throw new ApiError(400, "Unable to Delete Your video");
   }
 
-  return res.status(200).json(new ApiResponse(200, "Video Deleted Successfully"))
-
-})
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Video Deleted Successfully"));
+});
 
 export { getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo };

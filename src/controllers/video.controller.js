@@ -12,17 +12,20 @@ const getAllVideos = asyncHandler(async (req, res) => {
   const video = await Video.aggregatePaginate(
     {
       $match: {
-        title: query,
+        $match: {
+          title: query,
+        },
       },
+    },
+    {
+      page,
+      limit,
+      sort: { createdAt: parseInt(sortBy) },
     }
- , {
-  page,
-  limit,
-  sort : {createdAt : parseInt(sortBy)}
- }  );
+  );
 
-  if(!video){
-    throw new ApiError(404, "Unable to Find videos")
+  if (!video) {
+    throw new ApiError(404, "Unable to Find videos");
   }
 
   return res.status(200).json(new ApiResponse(200, video, "Video Details"));
@@ -126,9 +129,8 @@ const updateVideo = asyncHandler(async (req, res) => {
   //TODO: update video details like title, description, thumbnail
   const ownerId = req.user?._id;
 
-
-  if(!ownerId){
-    throw new ApiError(400, "You Need To login First")
+  if (!ownerId) {
+    throw new ApiError(400, "You Need To login First");
   }
 
   const { title, description } = req.body;
@@ -199,4 +201,38 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Video Deleted Successfully"));
 });
 
-export { getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo };
+const togglePublishStatus = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  const ownerId = req.user?._id;
+
+  if (!ownerId) {
+    throw new ApiError(400, "Login First");
+  }
+
+  const videoDetails = await Video.findOne({
+    _id : new mongoose.Types.ObjectId(videoId),
+    owner : new mongoose.Types.ObjectId(ownerId)
+  })
+
+  videoDetails.isPublic = !videoDetails.isPublic
+  
+  const video = await videoDetails.save()
+
+
+  if (!video) {
+    throw new ApiError(400, "Unable to change the status");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, video, "Video Status Changed"));
+});
+
+export {
+  getAllVideos,
+  publishAVideo,
+  getVideoById,
+  updateVideo,
+  deleteVideo,
+  togglePublishStatus,
+};

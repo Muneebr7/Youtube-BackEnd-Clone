@@ -19,4 +19,5 @@ videoRouter.route("/upload").post(verifyJwt, upload.fields([
 videoRouter.route("/id/:videoId").get(getVideoById)
 videoRouter.route('/update/:videoId').patch(verifyJwt, upload.single("thumbnail"), updateVideo)
 
+
 export default videoRouter;

@@ -4,8 +4,8 @@ import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
-import { upload } from "../middleware/multer.middleware.js";
 import fs from "fs";
+
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
@@ -107,6 +107,7 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: update video details like title, description, thumbnail
+  const ownerId = req.user?._id
 
   const { title, description } = req.body;
 
@@ -126,11 +127,22 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error While Uploading to Cloudinary");
   }
 
-  const video = await Video.findByIdAndUpdate(videoId, {
-    title,
-    description,
-    thumbnail: thumbnail.url
-  });
+
+  const video = await Video.findOneAndUpdate({
+    _id : new mongoose.Types.ObjectId(videoId),
+    owner : new mongoose.Types.ObjectId(ownerId),
+  },
+  {
+    $set : {
+      title,
+      description,
+      thumbnail : thumbnail.url
+    }
+  },
+  {
+    new : true
+  }
+  )
 
   if (!video) {
     throw new ApiError(400, "Unable to Update The Video Data");
@@ -143,4 +155,17 @@ const updateVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video Details Successfully Updated"));
 });
 
-export { getAllVideos, publishAVideo, getVideoById, updateVideo };
+const deleteVideo = asyncHandler(async (req, res) => {
+  const { videoId } = req.params
+
+  const video = await Video.findByIdAndDelete(videoId)
+
+  if(!video){
+    throw new ApiError(400, "Unable to Delete Your video")
+  }
+
+  return res.status(200).json(new ApiResponse(200, "Video Deleted Successfully"))
+
+})
+
+export { getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo };

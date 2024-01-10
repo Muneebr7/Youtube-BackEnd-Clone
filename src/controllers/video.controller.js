@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -157,8 +157,18 @@ const updateVideo = asyncHandler(async (req, res) => {
 
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params
+  const ownerId = req.user?._id
 
-  const video = await Video.findByIdAndDelete(videoId)
+  if(!ownerId){
+    throw new ApiError(400 , "Login to Delete")
+  }
+
+  const video = await Video.findOneAndDelete(
+    {
+        _id : new mongoose.Types.ObjectId(videoId),
+        owner : new mongoose.Types.ObjectId(ownerId)
+    }
+  )
 
   if(!video){
     throw new ApiError(400, "Unable to Delete Your video")

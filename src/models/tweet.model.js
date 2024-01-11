@@ -1,4 +1,4 @@
-import mongoose, { Schema, SchemaType} from "mongoose";
+import mongoose, { Schema} from "mongoose";
 
 const tweetSchema = new Schema(
     {

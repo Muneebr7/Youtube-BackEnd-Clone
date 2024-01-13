@@ -25,6 +25,38 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         throw new ApiError(400, "You Need To Login First")
     }
 
+    const subscribers =  await  Subscription.aggregate([
+        {
+            $match : {
+                channel :  new mongoose.Types.ObjectId(channelId)
+            }
+        },
+        {
+            $lookup : {
+                from : "users",
+                localField: "subscriber",
+                foreignField : "_id",
+                as : "subscriberDetails"
+            }
+        },
+        {
+            $unwind : "$subscriberDetails"
+        },
+        {
+            $project: {
+                _id : 0,
+                subscriber : "$subscriberDetails"
+            }
+        }
+    ])
+
+    if(!subscribers){
+        throw new ApiError(400, "unable to fetch subscribers")
+    }
+
+    return res.status(200).json(new ApiResponse(200, subscribers , "Subscribers Fetched"))
+
+
 
 })
 

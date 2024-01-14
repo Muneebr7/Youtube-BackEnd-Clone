@@ -10,6 +10,10 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     const {channelId} = req.params
     const userId = req.user?._id
 
+    if(!isValidObjectId(channelId)){
+        throw new ApiError(400, "Channel id is not valid")
+    }
+
     if(!userId){
         throw new ApiError(400, "You Need To Login First")
     }
@@ -43,6 +47,10 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const {channelId} = req.params
     const userId = req.user?._id
+
+    if(!isValidObjectId(channelId)){
+        throw new ApiError(400, "Channel id is not valid")
+    }
 
     if(!userId){
         throw new ApiError(400, "You Need To Login First")
@@ -86,6 +94,10 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
     const { subscriberId } = req.params
+
+    if(!isValidObjectId(channelId)){
+        throw new ApiError(400, "Subscriber id is not valid")
+    }
 
     const subscribedChannels =  await  Subscription.aggregate([
         {

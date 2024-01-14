@@ -14,6 +14,29 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         throw new ApiError(400, "You Need To Login First")
     }
 
+    // Check Existing Subscription
+    const subscribed =  await Subscription.findOne({
+        channel : new mongoose.Types.ObjectId(channelId),
+        subscriber : new mongoose.Types.ObjectId(userId)
+    },
+    )
+
+    if(subscribed){
+        const unSubscribe = await Subscription.findByIdAndDelete(subscribed._id)
+        return res.status(200, unSubscribe , "UnSubscribed")
+    }
+
+    const newSubscription = await Subscription.create({
+        channel: new mongoose.Types.ObjectId(channelId),
+        subscriber : new mongoose.Types.ObjectId(userId)
+    })
+
+    if(!newSubscription){
+        throw new ApiError(400,"Unable to Subscribe")
+    }
+
+    return res.status(200).json(new ApiResponse(200, newSubscription , "Subscribed Successfully"))
+
 })
 
 // controller to return subscriber list of a channel

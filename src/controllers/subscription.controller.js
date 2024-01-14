@@ -76,6 +76,8 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         {
             $project: {
                 _id : 0,
+                password: 0,
+                refreshToken : 0,
                 subscriber : "$subscriberDetails"
             }
         }

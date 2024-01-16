@@ -8,6 +8,35 @@ const getVideoComments = asyncHandler(async (req, res) => {
   //TODO: get all comments for a video
   const { videoId } = req.params;
   const { page = 1, limit = 10 } = req.query;
+  
+  if(!isValidObjectId(videoId)){
+    throw new ApiError(200, "video ID is Invalid")
+  }
+
+  const options = {
+    page,
+    limit
+  }
+
+  const aggregate = await Comment.aggregate([{
+    $match : {
+        _id : new mongoose.Types.ObjectId(videoId)
+    }
+  }])
+
+  if(!aggregate){
+    throw new ApiError(400, "Aggregate Issue")
+  }
+
+  const comments = await Comment.aggregatePaginate(aggregate, options)
+
+  if(!comments){
+    throw new ApiError(400, "unable to fetch comments on this video ")
+  }
+
+
+  return res.status(200).json(new ApiResponse(200, comments, "Comments Fetched"))
+
 });
 
 const addComment = asyncHandler(async (req, res) => {

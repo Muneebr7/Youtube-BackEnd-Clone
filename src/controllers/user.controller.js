@@ -40,12 +40,15 @@ const registerUser = asyncHandler(async (req, res) => {
     $or: [{ email }, { username }],
   });
 
-  if (existingUser) {
-    throw new ApiError(409, "User Already Register");
-  }
-
   const avatarLocalPath = req.files?.avatar[0]?.path;
   const coverLocalPath = req.files?.coverImage[0]?.path;
+
+  if (existingUser) {
+    // Deleteing Local Images
+    fs.unlinkSync(avatarLocalPath);
+    fs.unlinkSync(coverLocalPath);
+    throw new ApiError(409, "User Already Register");
+  }
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar not found");

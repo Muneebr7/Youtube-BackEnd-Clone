@@ -41,12 +41,12 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverLocalPath = req.files?.coverImage[0]?.path;
+   const coverLocalPath = req.files?.coverImage[0]?.path;
 
   if (existingUser) {
     // Deleteing Local Images
     fs.unlinkSync(avatarLocalPath);
-    fs.unlinkSync(coverLocalPath);
+     fs.unlinkSync(coverLocalPath);
     throw new ApiError(409, "User Already Register");
   }
 
@@ -61,7 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const coverImage = await uploadToCloudinary(coverLocalPath);
 
   if (!avatar) {
-    throw new ApiError(400, "Cover Image not found");
+    throw new ApiError(400, "Avatar Image not found");
   }
 
   const user = await User.create({
@@ -82,7 +82,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // Deleteing Local Images
   fs.unlinkSync(avatarLocalPath);
-  fs.unlinkSync(coverLocalPath);
+   fs.unlinkSync(coverLocalPath);
 
   return res
     .status(201)
@@ -107,7 +107,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const isPasswordValid = await userDetails.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
-    throw new ApiError(401, "Password is not Valid");
+    throw new ApiError(400, "Password is not Valid");
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(

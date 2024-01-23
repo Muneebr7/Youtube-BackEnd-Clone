@@ -8,15 +8,8 @@ import fs from "fs";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
-
+  
   const video = await Video.aggregatePaginate(
-    {
-      $match: {
-        $match: {
-          title: query,
-        },
-      },
-    },
     {
       page,
       limit,

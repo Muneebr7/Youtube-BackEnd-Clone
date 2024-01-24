@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -8,14 +8,20 @@ import fs from "fs";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+
   
-  const video = await Video.aggregatePaginate(
-    {
-      page,
-      limit,
-      sort: { createdAt: parseInt(sortBy) },
-    }
-  );
+
+  const video = await Video.find();
+
+  // const paginateVideo = await Video.aggregatePaginate(pipleline , options)
+
+  // const video = await Video.aggregatePaginate(
+  //   {
+  //     page,
+  //     limit,
+  //     sort: { createdAt: parseInt(sortBy) },
+  //   }
+  // );
 
   if (!video) {
     throw new ApiError(404, "Unable to Find videos");
@@ -26,6 +32,11 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const publishAVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
+  const userId = req.user?._id
+
+  if(!isValidObjectId(userId)){
+    throw new ApiError(400, "You Need To Login First")
+  }
 
   if (!(title && description)) {
     throw new ApiError(400, "All Fiels Are Requried");
@@ -56,10 +67,10 @@ const publishAVideo = asyncHandler(async (req, res) => {
   const video = await Video.create({
     videoFile: publishedVideo.url,
     thumbnail: videoThumbnail.url,
-    title,
+    title : title.toLowerCase(),
     description,
     duration: Math.floor(publishedVideo.duration),
-    owner: req.user?._id,
+    owner: new mongoose.Types.ObjectId(req.user?._id),
   });
 
   if (!video) {
@@ -76,6 +87,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
+
   const video = await Video.aggregate([
     {
       $match: {
@@ -86,7 +98,7 @@ const getVideoById = asyncHandler(async (req, res) => {
       $lookup: {
         from: "users",
         localField: "owner",
-        foreignField: "_id",
+        foreignField: '_id',
         as: "owner",
         pipeline: [
           {
@@ -204,14 +216,13 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   }
 
   const videoDetails = await Video.findOne({
-    _id : new mongoose.Types.ObjectId(videoId),
-    owner : new mongoose.Types.ObjectId(ownerId)
-  })
+    _id: new mongoose.Types.ObjectId(videoId),
+    owner: new mongoose.Types.ObjectId(ownerId),
+  });
 
-  videoDetails.isPublic = !videoDetails.isPublic
-  
-  const video = await videoDetails.save()
+  videoDetails.isPublic = !videoDetails.isPublic;
 
+  const video = await videoDetails.save();
 
   if (!video) {
     throw new ApiError(400, "Unable to change the status");

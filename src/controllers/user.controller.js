@@ -242,13 +242,18 @@ const getCurrectUser = asyncHandler(async (req, res) => {
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { email, fullName } = req.body;
+  const userId = req.user?._id
+
+  if(!userId){
+    throw new ApiError(400, "unAuthorized Request")
+  }
 
   if (!email || !fullName) {
     throw new ApiError(400, "All Fields are required");
   }
 
   const user = await User.findByIdAndUpdate(
-    req.user?._id,
+    userId,
     {
       $set: {
         email: email,
